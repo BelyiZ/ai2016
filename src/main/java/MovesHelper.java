@@ -1,12 +1,15 @@
 import model.*;
 
-import java.util.EnumMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 class MovesHelper {
 
     private static final double WAYPOINT_RADIUS = 100.0D;
+    private static final int TILE_SIZE = 400;
+    private static final int INDENT_LENGTH = 200;
 
     private static MovesHelper helper;
 
@@ -22,18 +25,9 @@ class MovesHelper {
     private World world;
     private Game game;
     private Move move;
+    private Point2D[] waypoints;
 
     private Random random;
-    private Point2D[] waypoints;
-    private LineType line;
-
-    /**
-     * Ключевые точки для каждой линии, позволяющие упростить управление перемещением волшебника.
-     * <p>
-     * Если всё хорошо, двигаемся к следующей точке и атакуем противников.
-     * Если осталось мало жизненной энергии, отступаем к предыдущей точке.
-     */
-    private final Map<LineType, Point2D[]> waypointsByLine = new EnumMap<>(LineType.class);
 
 
     /**
@@ -51,76 +45,71 @@ class MovesHelper {
 
     void initialize() {
         double mapSize = game.getMapSize();
+        LineType lineType = selectMoveLine();
 
-        waypointsByLine.put(LineType.MIDDLE, new Point2D[]{
-                new Point2D(100.0D, mapSize - 100.0D),
-                random.nextBoolean()
-                        ? new Point2D(600.0D, mapSize - 200.0D)
-                        : new Point2D(200.0D, mapSize - 600.0D),
-                new Point2D(800.0D, mapSize - 800.0D),
-                new Point2D(mapSize - 600.0D, 600.0D)
-        });
+        if (LineType.MIDDLE.equals(lineType)) {
+            waypoints = new Point2D[] {
+                    new Point2D(100.0D, mapSize - 100.0D),
+                    random.nextBoolean()
+                            ? new Point2D(600.0D, mapSize - 200.0D)
+                            : new Point2D(200.0D, mapSize - 600.0D),
+                    new Point2D(800.0D, mapSize - 800.0D),
+                    new Point2D(mapSize - 600.0D, 600.0D)
+            };
+        } else if (LineType.TOP.equals(lineType)) {
+            waypoints = new Point2D[] {
+                    new Point2D(100.0D, mapSize - 100.0D),
+                    new Point2D(100.0D, mapSize - 400.0D),
+                    new Point2D(200.0D, mapSize - 800.0D),
+                    new Point2D(200.0D, mapSize * 0.75D),
+                    new Point2D(200.0D, mapSize * 0.5D),
+                    new Point2D(200.0D, mapSize * 0.25D),
+                    new Point2D(200.0D, 200.0D),
+                    new Point2D(mapSize * 0.25D, 200.0D),
+                    new Point2D(mapSize * 0.5D, 200.0D),
+                    new Point2D(mapSize * 0.75D, 200.0D),
+                    new Point2D(mapSize - 200.0D, 200.0D)
+            };
+        } else {
+            waypoints = new Point2D[]{
+                    new Point2D(100.0D, mapSize - 100.0D),
+                    new Point2D(400.0D, mapSize - 100.0D),
+                    new Point2D(800.0D, mapSize - 200.0D),
+                    new Point2D(mapSize * 0.25D, mapSize - 200.0D),
+                    new Point2D(mapSize * 0.5D, mapSize - 200.0D),
+                    new Point2D(mapSize * 0.75D, mapSize - 200.0D),
+                    new Point2D(mapSize - 200.0D, mapSize - 200.0D),
+                    new Point2D(mapSize - 200.0D, mapSize * 0.75D),
+                    new Point2D(mapSize - 200.0D, mapSize * 0.5D),
+                    new Point2D(mapSize - 200.0D, mapSize * 0.25D),
+                    new Point2D(mapSize - 200.0D, 200.0D)
+            };
+        }
 
-        waypointsByLine.put(LineType.TOP, new Point2D[]{
-                new Point2D(100.0D, mapSize - 100.0D),
-                new Point2D(100.0D, mapSize - 400.0D),
-                new Point2D(200.0D, mapSize - 800.0D),
-                new Point2D(200.0D, mapSize * 0.75D),
-                new Point2D(200.0D, mapSize * 0.5D),
-                new Point2D(200.0D, mapSize * 0.25D),
-                new Point2D(200.0D, 200.0D),
-                new Point2D(mapSize * 0.25D, 200.0D),
-                new Point2D(mapSize * 0.5D, 200.0D),
-                new Point2D(mapSize * 0.75D, 200.0D),
-                new Point2D(mapSize - 200.0D, 200.0D)
-        });
 
-        waypointsByLine.put(LineType.BOTTOM, new Point2D[]{
-                new Point2D(100.0D, mapSize - 100.0D),
-                new Point2D(400.0D, mapSize - 100.0D),
-                new Point2D(800.0D, mapSize - 200.0D),
-                new Point2D(mapSize * 0.25D, mapSize - 200.0D),
-                new Point2D(mapSize * 0.5D, mapSize - 200.0D),
-                new Point2D(mapSize * 0.75D, mapSize - 200.0D),
-                new Point2D(mapSize - 200.0D, mapSize - 200.0D),
-                new Point2D(mapSize - 200.0D, mapSize * 0.75D),
-                new Point2D(mapSize - 200.0D, mapSize * 0.5D),
-                new Point2D(mapSize - 200.0D, mapSize * 0.25D),
-                new Point2D(mapSize - 200.0D, 200.0D)
-        });
+    }
 
+
+    private LineType selectMoveLine() {
         switch ((int) self.getId()) {
             case 1:
             case 2:
             case 6:
             case 7:
-                line = LineType.TOP;
-                break;
+                return LineType.TOP;
             case 3:
             case 8:
-                line = LineType.MIDDLE;
-                break;
+                return LineType.MIDDLE;
             case 4:
             case 5:
             case 9:
             case 10:
-                line = LineType.BOTTOM;
-                break;
+                return LineType.BOTTOM;
             default:
+                return LineType.MIDDLE;
         }
-
-        waypoints = waypointsByLine.get(line);
-
-        // Наша стратегия исходит из предположения, что заданные нами ключевые точки упорядочены по убыванию
-        // дальности до последней ключевой точки. Сейчас проверка этого факта отключена, однако вы можете
-        // написать свою проверку, если решите изменить координаты ключевых точек.
-
-            /*Point2D lastWaypoint = waypoints[waypoints.length - 1];
-
-            Preconditions.checkState(ArrayUtils.isSorted(waypoints, (waypointA, waypointB) -> Double.compare(
-                    waypointB.getDistanceTo(lastWaypoint), waypointA.getDistanceTo(lastWaypoint)
-            )));*/
     }
+
 
     /**
      * Данный метод предполагает, что все ключевые точки на линии упорядочены по уменьшению дистанции до последней
@@ -134,19 +123,47 @@ class MovesHelper {
         int lastWaypointIndex = waypoints.length - 1;
         Point2D lastWaypoint = waypoints[lastWaypointIndex];
 
+        Point2D result = null;
         for (int waypointIndex = 0; waypointIndex < lastWaypointIndex; ++waypointIndex) {
             Point2D waypoint = waypoints[waypointIndex];
 
             if (waypoint.getDistanceTo(self) <= WAYPOINT_RADIUS) {
-                return waypoints[waypointIndex + 1];
+                result = waypoints[waypointIndex + 1];
+                break;
             }
 
             if (lastWaypoint.getDistanceTo(waypoint) < lastWaypoint.getDistanceTo(self)) {
-                return waypoint;
+                result = waypoint;
+                break;
+            }
+        }
+        if (result == null) {
+            result = lastWaypoint;
+        }
+
+        List<LivingUnit> targets = new ArrayList<>();
+        targets.addAll(Arrays.asList(world.getBuildings()));
+        targets.addAll(Arrays.asList(world.getMinions()));
+        targets.addAll(Arrays.asList(world.getTrees()));
+
+        if (StrategyHelper.countUnitByPath(targets, self, result) != 0) {
+            Point2D left = new Point2D(result.getX() - INDENT_LENGTH, result.getY());
+            Point2D right = new Point2D(result.getX() + INDENT_LENGTH, result.getY());
+            Point2D top = new Point2D(result.getX(), result.getY() - INDENT_LENGTH);
+            Point2D bottom = new Point2D(result.getX(), result.getY() + INDENT_LENGTH);
+
+            if (StrategyHelper.countUnitByPath(targets, self, left) == 0) {
+                result = left;
+            } else if (StrategyHelper.countUnitByPath(targets, self, right) != 0) {
+                result = right;
+            } else if (StrategyHelper.countUnitByPath(targets, self, top) != 0) {
+                result = top;
+            } else if (StrategyHelper.countUnitByPath(targets, self, bottom) != 0) {
+                result = bottom;
             }
         }
 
-        return lastWaypoint;
+        return result;
     }
 
     /**
@@ -156,18 +173,46 @@ class MovesHelper {
     Point2D getPreviousWaypoint() {
         Point2D firstWaypoint = waypoints[0];
 
+        Point2D result = null;
         for (int waypointIndex = waypoints.length - 1; waypointIndex > 0; --waypointIndex) {
             Point2D waypoint = waypoints[waypointIndex];
 
             if (waypoint.getDistanceTo(self) <= WAYPOINT_RADIUS) {
-                return waypoints[waypointIndex - 1];
+                result = waypoints[waypointIndex - 1];
+                break;
             }
 
             if (firstWaypoint.getDistanceTo(waypoint) < firstWaypoint.getDistanceTo(self)) {
-                return waypoint;
+                result = waypoint;
+                break;
+            }
+        }
+        if (result == null) {
+            result = firstWaypoint;
+        }
+
+        List<LivingUnit> targets = new ArrayList<>();
+        targets.addAll(Arrays.asList(world.getBuildings()));
+        targets.addAll(Arrays.asList(world.getMinions()));
+        targets.addAll(Arrays.asList(world.getTrees()));
+
+        if (StrategyHelper.countUnitByPath(targets, self, result) != 0) {
+            Point2D left = new Point2D(result.getX() - INDENT_LENGTH < 0 ? 0 : result.getX() - INDENT_LENGTH, result.getY());
+            Point2D right = new Point2D(result.getX() + INDENT_LENGTH > world.getWidth() ? world.getWidth() : result.getX() + INDENT_LENGTH, result.getY());
+            Point2D top = new Point2D(result.getX(), result.getY() - INDENT_LENGTH < 0 ? 0 : result.getY() - INDENT_LENGTH);
+            Point2D bottom = new Point2D(result.getX(), result.getY() + INDENT_LENGTH > world.getHeight() ? world.getHeight() : result.getY() - INDENT_LENGTH);
+
+            if (StrategyHelper.countUnitByPath(targets, self, left) == 0) {
+                result = left;
+            } else if (StrategyHelper.countUnitByPath(targets, self, right) != 0) {
+                result = right;
+            } else if (StrategyHelper.countUnitByPath(targets, self, top) != 0) {
+                result = top;
+            } else if (StrategyHelper.countUnitByPath(targets, self, bottom) != 0) {
+                result = bottom;
             }
         }
 
-        return firstWaypoint;
+        return result;
     }
 }

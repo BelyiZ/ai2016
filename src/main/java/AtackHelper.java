@@ -1,5 +1,7 @@
 import model.*;
 
+import java.util.List;
+
 
 class AtackHelper {
 
@@ -32,64 +34,38 @@ class AtackHelper {
     }
 
 
+    LivingUnit getNearestTarget(LivingUnit[] units) {
+        LivingUnit result = null;
+        for (LivingUnit livingUnit : units) {
+            if (livingUnit.getFaction() == Faction.NEUTRAL || livingUnit.getFaction() == self.getFaction()) {
+                continue;
+            }
+            double distanceCurrent = self.getDistanceTo(livingUnit);
+            if (distanceCurrent > MAX_ATACK_RANGE) {
+                continue;
+            }
+            if (result == null) {
+                result = livingUnit;
+            } else {
+                int healthCurrent = livingUnit.getLife();
+                double distanceNearest = self.getDistanceTo(result);
+                int healthNearest = result.getLife();
+
+                if ((healthNearest / (double) result.getMaxLife()) * distanceNearest > (healthCurrent / (double) livingUnit.getMaxLife()) * distanceCurrent) {
+                    result = livingUnit;
+                }
+            }
+        }
+        return result;
+    }
+
     /**
      * Находим ближайшую цель для атаки.
      */
     LivingUnit getNearestTarget() {
-        LivingUnit preferableBuilding = null;
-        LivingUnit preferableWizard = null;
-        LivingUnit preferableMinions = null;
-
-        for (LivingUnit livingUnit : world.getBuildings()) {
-            if (livingUnit.getFaction() == Faction.NEUTRAL || livingUnit.getFaction() == self.getFaction()) {
-                continue;
-            }
-            double distanceCurrent = self.getDistanceTo(livingUnit);
-            if (distanceCurrent > MAX_ATACK_RANGE) {
-                continue;
-            }
-            preferableBuilding = livingUnit;
-        }
-        for (LivingUnit livingUnit : world.getMinions()) {
-            if (livingUnit.getFaction() == Faction.NEUTRAL || livingUnit.getFaction() == self.getFaction()) {
-                continue;
-            }
-            double distanceCurrent = self.getDistanceTo(livingUnit);
-            if (distanceCurrent > MAX_ATACK_RANGE) {
-                continue;
-            }
-            if (preferableMinions == null) {
-                preferableMinions = livingUnit;
-            } else {
-                int healthCurrent = livingUnit.getLife();
-                double distanceNearest = self.getDistanceTo(preferableMinions);
-                int healthNearest = preferableMinions.getLife();
-
-                if ((healthNearest / (double) preferableMinions.getMaxLife()) * distanceNearest > (healthCurrent / (double) livingUnit.getMaxLife()) * distanceCurrent) {
-                    preferableMinions = livingUnit;
-                }
-            }
-        }
-        for (LivingUnit livingUnit : world.getWizards()) {
-            if (livingUnit.getFaction() == Faction.NEUTRAL || livingUnit.getFaction() == self.getFaction()) {
-                continue;
-            }
-            double distanceCurrent = self.getDistanceTo(livingUnit);
-            if (distanceCurrent > MAX_ATACK_RANGE) {
-                continue;
-            }
-            if (preferableWizard == null) {
-                preferableWizard = livingUnit;
-            } else {
-                int healthCurrent = livingUnit.getLife();
-                double distanceNearest = self.getDistanceTo(preferableWizard);
-                int healthNearest = preferableWizard.getLife();
-
-                if ((healthNearest / (double) preferableWizard.getMaxLife()) * distanceNearest > (healthCurrent / (double) livingUnit.getMaxLife()) * distanceCurrent) {
-                    preferableWizard = livingUnit;
-                }
-            }
-        }
+        LivingUnit preferableBuilding = getNearestTarget(world.getBuildings());
+        LivingUnit preferableWizard = getNearestTarget(world.getWizards());
+        LivingUnit preferableMinions = getNearestTarget(world.getMinions());
 
         double buildingCoff = 0.0;
         double wizardCoff = 0.0;

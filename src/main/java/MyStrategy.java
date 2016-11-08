@@ -38,7 +38,7 @@ public final class MyStrategy implements Strategy {
         move.setStrafeSpeed(random.nextBoolean() ? game.getWizardStrafeSpeed() : -game.getWizardStrafeSpeed());
 
         if (safe()) {
-            goTo(movesHelper.getPreviousWaypoint());
+            runBack();
             return;
         }
         if (atack()) {
@@ -74,14 +74,42 @@ public final class MyStrategy implements Strategy {
     /**
      * Простейший способ перемещения волшебника.
      */
-    private void goTo(Point2D point) {
+    private void goTo(Point2D point, boolean useReverse) {
         double angle = self.getAngleTo(point.getX(), point.getY());
 
-        move.setTurn(angle);
+        if (useReverse && Math.abs(angle) > Math.PI / 2) {
+            if (angle > 0)
+                angle = Math.PI - angle;
+            else
+                angle = -1 * (Math.PI + angle);
+            move.setTurn(angle * -1);
+        } else {
+            move.setTurn(angle);
+        }
+//        move.setWheelTurn(angleToWaypoint * 32.0D / PI);
 
         if (StrictMath.abs(angle) < game.getStaffSector() / 4.0D) {
             move.setSpeed(game.getWizardForwardSpeed());
+            if (useReverse && Math.abs(self.getAngleTo(point.getX(), point.getY())) > Math.PI / 2) {
+                move.setSpeed(-game.getWizardBackwardSpeed());
+            }
         }
+    }
+
+    private void runBack() {
+        Point2D prevWaypoint = movesHelper.getPreviousWaypoint();
+        LivingUnit nearestTarget = atackHelper.getNearestTarget();
+        if (nearestTarget != null) {
+            double angleToNearestTarget = self.getAngleTo(nearestTarget.getX(), nearestTarget.getY());
+            double distanceToNearestTarget = self.getDistanceTo(nearestTarget);
+
+            if (angleToNearestTarget <= Math.abs(game.getStaffSector() / 2.0)) {
+                move.setAction(ActionType.MAGIC_MISSILE);
+                move.setCastAngle(angleToNearestTarget);
+                move.setMinCastDistance(distanceToNearestTarget - nearestTarget.getRadius() + game.getMagicMissileRadius());
+            }
+        }
+        goTo(prevWaypoint, true);
     }
 
     /**
@@ -142,6 +170,15 @@ public final class MyStrategy implements Strategy {
      * Если нет других действий, просто продвигаемся вперёд.
      */
     private void moving() {
-        goTo(movesHelper.getNextWaypoint());
+        Point2D nextWaypoint = movesHelper.getNextWaypoint();
+        goTo(nextWaypoint, false);
+        int count = StrategyHelper.countUnitByPath(Arrays.asList(world.getTrees()), self, nextWaypoint);
+        if (count != 0) {
+            LivingUnit nearestTarget = atackHelper.getNearestTarget(world.getTrees());
+            double distance = self.getDistanceTo(nearestTarget);
+            move.setAction(ActionType.MAGIC_MISSILE);
+            move.setCastAngle(self.getAngleTo(nearestTarget));
+            move.setMinCastDistance(distance - nearestTarget.getRadius() + game.getMagicMissileRadius());
+        }
     }
 }
