@@ -243,7 +243,7 @@ public final class RemoteProcessClient implements Closeable {
             return null;
         }
 
-        return new Message(readEnum(LineType.class), readEnum(SkillType.class), readByteArray(false));
+        return new Message(readEnum(LaneType.class), readEnum(SkillType.class), readByteArray(false));
     }
 
     private void writeMessages(Message[] messages) throws IOException {
@@ -256,7 +256,7 @@ public final class RemoteProcessClient implements Closeable {
         } else {
             writeBoolean(true);
 
-            writeEnum(message.getLine());
+            writeEnum(message.getLane());
             writeEnum(message.getSkillToLearn());
             writeByteArray(message.getRawMessage());
         }

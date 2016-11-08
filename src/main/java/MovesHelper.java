@@ -45,9 +45,9 @@ class MovesHelper {
 
     void initialize() {
         double mapSize = game.getMapSize();
-        LineType lineType = selectMoveLine();
+        LaneType lineType = selectMoveLine();
 
-        if (LineType.MIDDLE.equals(lineType)) {
+        if (LaneType.MIDDLE.equals(lineType)) {
             waypoints = new Point2D[] {
                     new Point2D(100.0D, mapSize - 100.0D),
                     random.nextBoolean()
@@ -56,7 +56,7 @@ class MovesHelper {
                     new Point2D(800.0D, mapSize - 800.0D),
                     new Point2D(mapSize - 600.0D, 600.0D)
             };
-        } else if (LineType.TOP.equals(lineType)) {
+        } else if (LaneType.TOP.equals(lineType)) {
             waypoints = new Point2D[] {
                     new Point2D(100.0D, mapSize - 100.0D),
                     new Point2D(100.0D, mapSize - 400.0D),
@@ -90,23 +90,23 @@ class MovesHelper {
     }
 
 
-    private LineType selectMoveLine() {
+    private LaneType selectMoveLine() {
         switch ((int) self.getId()) {
             case 1:
             case 2:
             case 6:
             case 7:
-                return LineType.TOP;
+                return LaneType.TOP;
             case 3:
             case 8:
-                return LineType.MIDDLE;
+                return LaneType.MIDDLE;
             case 4:
             case 5:
             case 9:
             case 10:
-                return LineType.BOTTOM;
+                return LaneType.BOTTOM;
             default:
-                return LineType.MIDDLE;
+                return LaneType.MIDDLE;
         }
     }
 
