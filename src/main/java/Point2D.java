@@ -20,7 +20,7 @@ final class Point2D {
         return y;
     }
 
-    double getDistanceTo(double x, double y) {
+    private double getDistanceTo(double x, double y) {
         return StrictMath.hypot(this.x - x, this.y - y);
     }
 

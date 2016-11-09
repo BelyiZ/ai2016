@@ -1,17 +1,13 @@
 import model.*;
 
-import java.util.List;
 
+class AttackHelper {
 
-class AtackHelper {
+    private static AttackHelper helper;
 
-    private static final int MAX_ATACK_RANGE = 600;
-
-    private static AtackHelper helper;
-
-    static synchronized AtackHelper getInstance() {
+    static synchronized AttackHelper getInstance() {
         if (helper == null) {
-            helper = new AtackHelper();
+            helper = new AttackHelper();
         }
         return helper;
     }
@@ -20,17 +16,15 @@ class AtackHelper {
     private Wizard self;
     private World world;
     private Game game;
-    private Move move;
 
 
     /**
      * Сохраняем все входные данные в полях класса для упрощения доступа к ним.
      */
-    void initializeTick(Wizard self, World world, Game game, Move move) {
+    void initializeTick(Wizard self, World world, Game game) {
         this.self = self;
         this.world = world;
         this.game = game;
-        this.move = move;
     }
 
 
@@ -41,7 +35,7 @@ class AtackHelper {
                 continue;
             }
             double distanceCurrent = self.getDistanceTo(livingUnit);
-            if (distanceCurrent > MAX_ATACK_RANGE) {
+            if (distanceCurrent > self.getCastRange() + 200) {
                 continue;
             }
             if (result == null) {
@@ -71,7 +65,7 @@ class AtackHelper {
         double wizardCoff = 0.0;
         double minionCoff = 0.0;
         if (preferableBuilding != null) {
-            buildingCoff = (preferableBuilding.getLife() / ((double) preferableBuilding.getMaxLife() * 1.5)) * self.getDistanceTo(preferableBuilding);
+            buildingCoff = (preferableBuilding.getLife() / ((double) preferableBuilding.getMaxLife() * 0.5)) * self.getDistanceTo(preferableBuilding);
         }
         if (preferableWizard != null) {
             wizardCoff = (preferableWizard.getLife() / ((double) preferableWizard.getMaxLife() * 1.5)) * self.getDistanceTo(preferableWizard);
@@ -91,6 +85,15 @@ class AtackHelper {
         }
 
         return nearestUnit;
+    }
+
+    Double getDistanceToEnemyBase() {
+        for (Building building : world.getBuildings()) {
+            if (BuildingType.FACTION_BASE.equals(building.getType()) && !building.getFaction().equals(self.getFaction())) {
+                return self.getDistanceTo(building);
+            }
+        }
+        return null;
     }
 
 }

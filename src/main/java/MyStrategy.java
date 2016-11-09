@@ -6,7 +6,8 @@ public final class MyStrategy implements Strategy {
 
     private static final double LOW_HP_FACTOR = 0.30D;
     private static final int SAFE_DISTANCE = 400;
-    private static final int SAFE_MINION_ATACK_DISTANCE = 150;
+    private static final int SAFE_MINION_ATTACK_DISTANCE = 150;
+    private static final int ADDL_STEP_TICK = 50;
 
     private Random random;
     private Wizard self;
@@ -14,7 +15,12 @@ public final class MyStrategy implements Strategy {
     private Game game;
     private Move move;
     private MovesHelper movesHelper = MovesHelper.getInstance();
-    private AtackHelper atackHelper = AtackHelper.getInstance();
+    private AttackHelper attackHelper = AttackHelper.getInstance();
+
+
+    private int addlStepCount = 0;
+    private double strafeSpeed;
+    private boolean lastStrafeSpeed = false;
 
 
     /**
@@ -28,20 +34,21 @@ public final class MyStrategy implements Strategy {
      */
     @Override
     public void move(Wizard self, World world, Game game, Move move) {
+        if (world.getTickIndex() < 300) {
+            return;
+        }
         initializeTick(self, world, game, move);
-        movesHelper.initializeTick(self, world, game, move);
-        atackHelper.initializeTick(self, world, game, move);
+        movesHelper.initializeTick(self, world, game);
+        attackHelper.initializeTick(self, world, game);
         initializeStrategy(game);
-
-        // Постоянно двигаемся из-стороны в сторону, чтобы по нам было сложнее попасть.
-        // Считаете, что сможете придумать более эффективный алгоритм уклонения? Попробуйте! ;)
-        move.setStrafeSpeed(random.nextBoolean() ? game.getWizardStrafeSpeed() : -game.getWizardStrafeSpeed());
 
         if (safe()) {
             runBack();
+//            addlStep();
             return;
         }
         if (atack()) {
+            addlStep();
             return;
         }
         moving();
@@ -68,6 +75,7 @@ public final class MyStrategy implements Strategy {
             random = new Random(game.getRandomSeed());
         }
         movesHelper.initialize();
+        movesHelper.initParams();
     }
 
 
@@ -86,7 +94,6 @@ public final class MyStrategy implements Strategy {
         } else {
             move.setTurn(angle);
         }
-//        move.setWheelTurn(angleToWaypoint * 32.0D / PI);
 
         if (StrictMath.abs(angle) < game.getStaffSector() / 4.0D) {
             move.setSpeed(game.getWizardForwardSpeed());
@@ -98,12 +105,12 @@ public final class MyStrategy implements Strategy {
 
     private void runBack() {
         Point2D prevWaypoint = movesHelper.getPreviousWaypoint();
-        LivingUnit nearestTarget = atackHelper.getNearestTarget();
+        LivingUnit nearestTarget = attackHelper.getNearestTarget();
         if (nearestTarget != null) {
             double angleToNearestTarget = self.getAngleTo(nearestTarget.getX(), nearestTarget.getY());
             double distanceToNearestTarget = self.getDistanceTo(nearestTarget);
 
-            if (angleToNearestTarget <= Math.abs(game.getStaffSector() / 2.0)) {
+            if (Math.abs(angleToNearestTarget) <= Math.abs(game.getStaffSector() / 2.0)) {
                 move.setAction(ActionType.MAGIC_MISSILE);
                 move.setCastAngle(angleToNearestTarget);
                 move.setMinCastDistance(distanceToNearestTarget - nearestTarget.getRadius() + game.getMagicMissileRadius());
@@ -116,6 +123,10 @@ public final class MyStrategy implements Strategy {
      * Если осталось мало жизненной энергии, отступаем к предыдущей ключевой точке на линии.
      */
     private boolean safe() {
+        Double distancetoEnemyBase = attackHelper.getDistanceToEnemyBase();
+        if (distancetoEnemyBase != null && distancetoEnemyBase < self.getCastRange()) {
+            return false;
+        }
         if (self.getLife() < self.getMaxLife() * LOW_HP_FACTOR) {
             return true;
         }
@@ -126,7 +137,7 @@ public final class MyStrategy implements Strategy {
                 continue;
             }
             double distance = self.getDistanceTo(livingUnit);
-            if (distance < SAFE_MINION_ATACK_DISTANCE) {
+            if (distance < SAFE_MINION_ATTACK_DISTANCE) {
                 count += 3;
             } else if (distance < SAFE_DISTANCE) {
                 count++;
@@ -139,7 +150,7 @@ public final class MyStrategy implements Strategy {
      * Атакуем противника, если он виден.
      */
     private boolean atack() {
-        LivingUnit nearestTarget = atackHelper.getNearestTarget();
+        LivingUnit nearestTarget = attackHelper.getNearestTarget();
 
         // Если видим противника ...
         if (nearestTarget != null) {
@@ -161,9 +172,28 @@ public final class MyStrategy implements Strategy {
                 }
 
                 return true;
+            } else {
+                goTo(new Point2D(nearestTarget.getX(), nearestTarget.getY()), false);
             }
         }
         return false;
+    }
+
+    /**
+     * Постоянно двигаемся из-стороны в сторону, чтобы по нам было сложнее попасть.
+     *
+     */
+    private void addlStep() {
+        if (addlStepCount == 0) {
+            strafeSpeed = lastStrafeSpeed ? game.getWizardStrafeSpeed() : -game.getWizardStrafeSpeed();
+            addlStepCount++;
+        } else if (addlStepCount == ADDL_STEP_TICK) {
+            addlStepCount = 0;
+            lastStrafeSpeed = !lastStrafeSpeed;
+        } else {
+            addlStepCount++;
+        }
+        move.setStrafeSpeed(strafeSpeed);
     }
 
     /**
@@ -174,11 +204,14 @@ public final class MyStrategy implements Strategy {
         goTo(nextWaypoint, false);
         int count = StrategyHelper.countUnitByPath(Arrays.asList(world.getTrees()), self, nextWaypoint);
         if (count != 0) {
-            LivingUnit nearestTarget = atackHelper.getNearestTarget(world.getTrees());
-            double distance = self.getDistanceTo(nearestTarget);
-            move.setAction(ActionType.MAGIC_MISSILE);
-            move.setCastAngle(self.getAngleTo(nearestTarget));
-            move.setMinCastDistance(distance - nearestTarget.getRadius() + game.getMagicMissileRadius());
+            LivingUnit nearestTarget = attackHelper.getNearestTarget(world.getTrees());
+            if (nearestTarget != null) {
+                double distance = self.getDistanceTo(nearestTarget);
+                move.setAction(ActionType.MAGIC_MISSILE);
+                move.setCastAngle(self.getAngleTo(nearestTarget));
+                move.setMinCastDistance(distance - nearestTarget.getRadius() + game.getMagicMissileRadius());
+                addlStep();
+            }
         }
     }
 }

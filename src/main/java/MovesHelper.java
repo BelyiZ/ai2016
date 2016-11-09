@@ -7,8 +7,7 @@ import java.util.Random;
 
 class MovesHelper {
 
-    private static final double WAYPOINT_RADIUS = 100.0D;
-    private static final int TILE_SIZE = 400;
+    private static final double WAYPOINT_RADIUS = 150.0D;
     private static final int INDENT_LENGTH = 200;
 
     private static MovesHelper helper;
@@ -24,69 +23,123 @@ class MovesHelper {
     private Wizard self;
     private World world;
     private Game game;
-    private Move move;
     private Point2D[] waypoints;
 
     private Random random;
+
+    private Point2D nextWaypoint;
+    private Point2D prevWaypoint;
 
 
     /**
      * Сохраняем все входные данные в полях класса для упрощения доступа к ним.
      */
-    void initializeTick(Wizard self, World world, Game game, Move move) {
+    void initializeTick(Wizard self, World world, Game game) {
         this.self = self;
         this.world = world;
         this.game = game;
-        this.move = move;
         if (random == null) {
             random = new Random(game.getRandomSeed());
         }
     }
 
     void initialize() {
-        double mapSize = game.getMapSize();
+        if (waypoints != null)
+            return;
+
         LaneType lineType = selectMoveLine();
 
         if (LaneType.MIDDLE.equals(lineType)) {
             waypoints = new Point2D[] {
-                    new Point2D(100.0D, mapSize - 100.0D),
-                    random.nextBoolean()
-                            ? new Point2D(600.0D, mapSize - 200.0D)
-                            : new Point2D(200.0D, mapSize - 600.0D),
-                    new Point2D(800.0D, mapSize - 800.0D),
-                    new Point2D(mapSize - 600.0D, 600.0D)
+                    new Point2D(100.0D, 3900.0D),
+                    new Point2D(100.0D, 3300.0D),
+                    new Point2D(800.0D, 3200.0D),
+                    new Point2D(1200.0D, 2800.0D),
+                    new Point2D(1600.0D, 2400.0D),
+                    new Point2D(2000.0D, 2000.0D),
+                    new Point2D(2400.0D, 1600.0D),
+                    new Point2D(2800.0D, 1200.0D),
+                    new Point2D(3200.0D, 800.0D),
+                    new Point2D(3600.0D, 400.0D)
             };
         } else if (LaneType.TOP.equals(lineType)) {
             waypoints = new Point2D[] {
-                    new Point2D(100.0D, mapSize - 100.0D),
-                    new Point2D(100.0D, mapSize - 400.0D),
-                    new Point2D(200.0D, mapSize - 800.0D),
-                    new Point2D(200.0D, mapSize * 0.75D),
-                    new Point2D(200.0D, mapSize * 0.5D),
-                    new Point2D(200.0D, mapSize * 0.25D),
-                    new Point2D(200.0D, 200.0D),
-                    new Point2D(mapSize * 0.25D, 200.0D),
-                    new Point2D(mapSize * 0.5D, 200.0D),
-                    new Point2D(mapSize * 0.75D, 200.0D),
-                    new Point2D(mapSize - 200.0D, 200.0D)
+                    new Point2D(100.0D, 3900.0D),
+                    new Point2D(100.0D, 3500.0D),
+                    new Point2D(200.0D, 3200.0D),
+                    new Point2D(200.0D, 2800.0D),
+                    new Point2D(200.0D, 2400.0D),
+                    new Point2D(200.0D, 2000.0D),
+                    new Point2D(200.0D, 1600.0D),
+                    new Point2D(200.0D, 1200.0D),
+                    new Point2D(200.0D, 800.0D),
+
+                    new Point2D(500D, 500D),
+
+                    new Point2D(800D, 200.0D),
+                    new Point2D(1200D, 200.0D),
+                    new Point2D(1600D, 200.0D),
+                    new Point2D(2000D, 200.0D),
+                    new Point2D(2400D, 200.0D),
+                    new Point2D(2800D, 200.0D),
+                    new Point2D(3200D, 200.0D),
+                    new Point2D(3600D, 200.0D),
+                    new Point2D(3800.0D, 200.0D)
             };
         } else {
             waypoints = new Point2D[]{
-                    new Point2D(100.0D, mapSize - 100.0D),
-                    new Point2D(400.0D, mapSize - 100.0D),
-                    new Point2D(800.0D, mapSize - 200.0D),
-                    new Point2D(mapSize * 0.25D, mapSize - 200.0D),
-                    new Point2D(mapSize * 0.5D, mapSize - 200.0D),
-                    new Point2D(mapSize * 0.75D, mapSize - 200.0D),
-                    new Point2D(mapSize - 200.0D, mapSize - 200.0D),
-                    new Point2D(mapSize - 200.0D, mapSize * 0.75D),
-                    new Point2D(mapSize - 200.0D, mapSize * 0.5D),
-                    new Point2D(mapSize - 200.0D, mapSize * 0.25D),
-                    new Point2D(mapSize - 200.0D, 200.0D)
+                    new Point2D(100.0D, 3900.0D),
+                    new Point2D(500.0D, 3900.0D),
+                    new Point2D(800.0D, 3800.0D),
+                    new Point2D(1200.0D, 3800.0D),
+                    new Point2D(1600.0D, 3800.0D),
+                    new Point2D(2000.0D, 3800.0D),
+                    new Point2D(2400.0D, 3800.0D),
+                    new Point2D(2800.0D, 3800.0D),
+                    new Point2D(3200.0D, 3800.0D),
+
+                    new Point2D(3500D, 3500D),
+
+                    new Point2D(3800D, 3200.0D),
+                    new Point2D(3800D, 2800.0D),
+                    new Point2D(3800D, 2400.0D),
+                    new Point2D(3800D, 2000.0D),
+                    new Point2D(3800D, 1600.0D),
+                    new Point2D(3800D, 1200.0D),
+                    new Point2D(3800D, 800.0D),
+                    new Point2D(3900D, 500.0D),
+                    new Point2D(3900.0D, 100.0D)
             };
         }
+    }
 
+    void initParams() {
+        Point2D nearPoint1 = null;
+        Point2D nearPoint2 = null;
+        for (Point2D waypoint : waypoints) {
+            if (waypoint.getDistanceTo(self) < WAYPOINT_RADIUS) {
+                continue;
+            }
+            if (nearPoint1 == null) {
+                nearPoint1 = waypoint;
+                continue;
+            }
 
+            if (waypoint.getDistanceTo(self) < nearPoint1.getDistanceTo(self)) {
+                nearPoint2 = nearPoint1;
+                nearPoint1 = waypoint;
+            } else if (nearPoint2 == null || waypoint.getDistanceTo(self) < nearPoint2.getDistanceTo(self)) {
+                nearPoint2 = waypoint;
+            }
+        }
+
+        if (waypoints[0].getDistanceTo(nearPoint1) < waypoints[0].getDistanceTo(nearPoint2)) {
+            prevWaypoint = nearPoint1;
+            nextWaypoint = nearPoint2;
+        } else {
+            prevWaypoint = nearPoint2;
+            nextWaypoint = nearPoint1;
+        }
     }
 
 
@@ -120,50 +173,24 @@ class MovesHelper {
      * так, то мы сразу возвращаем следующую ключевую точку.
      */
     Point2D getNextWaypoint() {
-        int lastWaypointIndex = waypoints.length - 1;
-        Point2D lastWaypoint = waypoints[lastWaypointIndex];
-
-        Point2D result = null;
-        for (int waypointIndex = 0; waypointIndex < lastWaypointIndex; ++waypointIndex) {
-            Point2D waypoint = waypoints[waypointIndex];
-
-            if (waypoint.getDistanceTo(self) <= WAYPOINT_RADIUS) {
-                result = waypoints[waypointIndex + 1];
-                break;
-            }
-
-            if (lastWaypoint.getDistanceTo(waypoint) < lastWaypoint.getDistanceTo(self)) {
-                result = waypoint;
-                break;
-            }
-        }
-        if (result == null) {
-            result = lastWaypoint;
-        }
-
         List<LivingUnit> targets = new ArrayList<>();
         targets.addAll(Arrays.asList(world.getBuildings()));
         targets.addAll(Arrays.asList(world.getMinions()));
         targets.addAll(Arrays.asList(world.getTrees()));
 
-        if (StrategyHelper.countUnitByPath(targets, self, result) != 0) {
-            Point2D left = new Point2D(result.getX() - INDENT_LENGTH, result.getY());
-            Point2D right = new Point2D(result.getX() + INDENT_LENGTH, result.getY());
-            Point2D top = new Point2D(result.getX(), result.getY() - INDENT_LENGTH);
-            Point2D bottom = new Point2D(result.getX(), result.getY() + INDENT_LENGTH);
-
-            if (StrategyHelper.countUnitByPath(targets, self, left) == 0) {
-                result = left;
-            } else if (StrategyHelper.countUnitByPath(targets, self, right) != 0) {
-                result = right;
-            } else if (StrategyHelper.countUnitByPath(targets, self, top) != 0) {
-                result = top;
-            } else if (StrategyHelper.countUnitByPath(targets, self, bottom) != 0) {
-                result = bottom;
+        int nextWaypointIndex = getWaypointIndex(nextWaypoint);
+        if (StrategyHelper.countUnitByPath(targets, self, nextWaypoint) != 0) {
+            Point2D viewPoint = getViewPoint(nextWaypoint, targets);
+            if (viewPoint == null && nextWaypointIndex != 0 && nextWaypointIndex != waypoints.length -1) {
+                Point2D nextNextWaypoint = waypoints[nextWaypointIndex + 1];
+                viewPoint = getViewPoint(nextNextWaypoint, targets);
+            }
+            if (viewPoint != null) {
+                return viewPoint;
             }
         }
 
-        return result;
+        return nextWaypoint;
     }
 
     /**
@@ -171,48 +198,52 @@ class MovesHelper {
      * {@code waypoints}.
      */
     Point2D getPreviousWaypoint() {
-        Point2D firstWaypoint = waypoints[0];
-
-        Point2D result = null;
-        for (int waypointIndex = waypoints.length - 1; waypointIndex > 0; --waypointIndex) {
-            Point2D waypoint = waypoints[waypointIndex];
-
-            if (waypoint.getDistanceTo(self) <= WAYPOINT_RADIUS) {
-                result = waypoints[waypointIndex - 1];
-                break;
-            }
-
-            if (firstWaypoint.getDistanceTo(waypoint) < firstWaypoint.getDistanceTo(self)) {
-                result = waypoint;
-                break;
-            }
-        }
-        if (result == null) {
-            result = firstWaypoint;
-        }
-
         List<LivingUnit> targets = new ArrayList<>();
         targets.addAll(Arrays.asList(world.getBuildings()));
         targets.addAll(Arrays.asList(world.getMinions()));
         targets.addAll(Arrays.asList(world.getTrees()));
 
-        if (StrategyHelper.countUnitByPath(targets, self, result) != 0) {
-            Point2D left = new Point2D(result.getX() - INDENT_LENGTH < 0 ? 0 : result.getX() - INDENT_LENGTH, result.getY());
-            Point2D right = new Point2D(result.getX() + INDENT_LENGTH > world.getWidth() ? world.getWidth() : result.getX() + INDENT_LENGTH, result.getY());
-            Point2D top = new Point2D(result.getX(), result.getY() - INDENT_LENGTH < 0 ? 0 : result.getY() - INDENT_LENGTH);
-            Point2D bottom = new Point2D(result.getX(), result.getY() + INDENT_LENGTH > world.getHeight() ? world.getHeight() : result.getY() - INDENT_LENGTH);
-
-            if (StrategyHelper.countUnitByPath(targets, self, left) == 0) {
-                result = left;
-            } else if (StrategyHelper.countUnitByPath(targets, self, right) != 0) {
-                result = right;
-            } else if (StrategyHelper.countUnitByPath(targets, self, top) != 0) {
-                result = top;
-            } else if (StrategyHelper.countUnitByPath(targets, self, bottom) != 0) {
-                result = bottom;
+        int prevWaypointIndex = getWaypointIndex(prevWaypoint);
+        if (StrategyHelper.countUnitByPath(targets, self, prevWaypoint) != 0) {
+            Point2D viewPoint = getViewPoint(prevWaypoint, targets);
+            if (viewPoint == null && prevWaypointIndex != 0 && prevWaypointIndex != waypoints.length -1) {
+                Point2D nextNextWaypoint = waypoints[prevWaypointIndex - 1];
+                viewPoint = getViewPoint(nextNextWaypoint, targets);
+            }
+            if (viewPoint != null) {
+                return viewPoint;
             }
         }
 
+        return prevWaypoint;
+    }
+
+    private Point2D getViewPoint(Point2D waypoint, List<LivingUnit> targets) {
+        Point2D left = new Point2D(waypoint.getX() - INDENT_LENGTH, waypoint.getY());
+        Point2D right = new Point2D(waypoint.getX() + INDENT_LENGTH, waypoint.getY());
+        Point2D top = new Point2D(waypoint.getX(), waypoint.getY() - INDENT_LENGTH);
+        Point2D bottom = new Point2D(waypoint.getX(), waypoint.getY() + INDENT_LENGTH);
+
+        Point2D result = null;
+        if (left.getDistanceTo(self) > WAYPOINT_RADIUS && StrategyHelper.countUnitByPath(targets, self, left) == 0) {
+            result = left;
+        } else if (bottom.getDistanceTo(self) > WAYPOINT_RADIUS && StrategyHelper.countUnitByPath(targets, self, bottom) != 0) {
+            result = bottom;
+        } else if (right.getDistanceTo(self) > WAYPOINT_RADIUS && StrategyHelper.countUnitByPath(targets, self, right) != 0) {
+            result = right;
+        } else if (top.getDistanceTo(self) > WAYPOINT_RADIUS && StrategyHelper.countUnitByPath(targets, self, top) != 0) {
+            result = top;
+        }
         return result;
+    }
+
+    private int getWaypointIndex(Point2D waypoint) {
+        int i = 0;
+        for (Point2D point : waypoints) {
+            if (point.equals(waypoint))
+                return i;
+            i++;
+        }
+        return 0;
     }
 }
